@@ -1,253 +1,197 @@
-import { useState, useEffect, useRef } from 'react'
-import { motion } from 'framer-motion'
-import { Search, Moon, Sun, ExternalLink, Check, CoffeeIcon } from 'lucide-react'
-import { Analytics } from "@vercel/analytics/react"
+import { useState, useRef } from 'react';
+import { Moon, Stars, Play, Pause, Download, Sparkles, Rocket, Crown } from 'lucide-react';
+import OpenAI from 'openai'
 
-const tools = [
-  { id: 1, name: 'JSON Formatter', description: 'Format and validate your JSON with ease', icon: '🔧', url: 'https://ai-json.vercel.app/' },
-  { id: 2, name: 'Code Converter', description: 'Convert code between different programming languages', icon: '🐼', url: 'https://ai-codeswitch.vercel.app/' },
-  { id: 3, name: 'Regex Generator', description: 'Generate regular expressions for your needs', icon: '🧬', url: 'https://ai-reg.vercel.app/' },
-  { id: 4, name: 'Prompt Generator', description: 'Create engaging prompts for AI models', icon: '💡', url: 'https://ai-prompt-gen.vercel.app/' },
-  { id: 5, name: 'Color Palette Generator', description: 'Generate beautiful color palettes for your projects', icon: '🎨', url: 'https://www.coolorbrew.art/', madeByFriend: true },
-  // { id: 6, name: 'Markdown Editor', description: 'Write and preview Markdown in real-time', icon: '📝', url: '/markdown-editor' },
-  // { id: 7, name: 'Image Optimizer', description: 'Optimize your images for web performance', icon: '🖼️', url: '/image-optimizer' },
-  // { id: 8, name: 'CSS Flexbox Generator', description: 'Generate and visualize CSS Flexbox layouts', icon: '📏', url: '/flexbox-generator' },
-]
+const openai = new OpenAI({
+  apiKey: import.meta.env.VITE_OPENAI_API_KEY,
+  dangerouslyAllowBrowser: true // Note: This is not recommended for production
+})
 
-export default function ToolShowcase() {
-  const [isDarkMode, setIsDarkMode] = useState(false)
-  const [searchTerm, setSearchTerm] = useState('')
-  const [filteredTools, setFilteredTools] = useState(tools)
-  const pricingRef = useRef<HTMLDivElement>(null)
+const StoryGenerator = () => {
+  const [story, setStory] = useState('');
+  const [, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [age, setAge] = useState('5-7');
+  const [genre, setGenre] = useState('fantasy');
+  const audioRef = useRef(null);
 
-  useEffect(() => {
-    if (isDarkMode) {
-      document.documentElement.classList.add('dark')
-    } else {
-      document.documentElement.classList.remove('dark')
+  const genreIcons = {
+    fantasy: <Crown className="w-5 h-5 text-purple-300" />,
+    adventure: <Rocket className="w-5 h-5 text-blue-300" />,
+    animals: <Crown className="w-5 h-5 text-amber-300" />,
+    ocean: <Rocket className="w-5 h-5 text-cyan-300" />
+  };
+
+  const generateStory = async () => {
+    setIsLoading(true)
+    try {
+      const completion = await openai.chat.completions.create({
+        messages: [
+          {
+            role: "system",
+            content: "You are a creative storyteller who specializes in creating engaging, age-appropriate bedtime stories for kids."
+          },
+          {
+            role: "user",
+            content: `Create a bedtime story for a child aged ${age} based on the genre '${genre}'. The story should be between 7 to 10 minutes long, contain elements appropriate for children, and have a calming tone to help them fall asleep. The story should also include a positive message or moral at the end.`
+          }
+        ],
+        model: "gpt-3.5-turbo",
+      });
+      
+      const response: any = completion.choices[0].message.content;
+      try {
+        setStory(response)
+      } catch (parseError) {
+        setError("There was an error.");
+      }
+    } catch (aiError) {
+      setError('Failed to get AI fix: ' + (aiError as Error).message);
+    } finally {
+      setIsLoading(false);
     }
-  }, [isDarkMode])
-
-  useEffect(() => {
-    const filtered = tools.filter(tool =>
-      tool.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      tool.description.toLowerCase().includes(searchTerm.toLowerCase())
-    )
-    setFilteredTools(filtered)
-  }, [searchTerm])
-
-  const scrollToPricing = () => {
-    pricingRef.current?.scrollIntoView({ behavior: 'smooth' })
   }
 
+  const togglePlayPause = () => {
+    if (audioRef.current) {
+      if (isPlaying) {
+        audioRef.current.pause();
+      } else {
+        audioRef.current.play();
+      }
+      setIsPlaying(!isPlaying);
+    }
+  };
+
   return (
-    <div className={`min-h-screen ${isDarkMode ? 'dark' : ''}`}>
-      <div className="bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
-        <header className="bg-white dark:bg-gray-800 shadow-sm transition-colors duration-200">
-          <nav className="container mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex justify-between h-16">
-              <div className="flex items-center">
-                <span className="text-2xl font-bold text-rose-500 dark:text-rose-400">ToolKit</span>
-              </div>
-              <div className="flex items-center space-x-4">
-                <button onClick={scrollToPricing} className="text-gray-500 dark:text-gray-300 hover:text-rose-500 dark:hover:text-rose-400 transition-colors duration-200">
-                  Pricing
-                </button>
-                <button
-                  onClick={() => setIsDarkMode(!isDarkMode)}
-                  className="bg-gray-200 dark:bg-gray-700 p-1 rounded-full text-gray-500 dark:text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rose-500 transition-colors duration-200"
-                >
-                  {isDarkMode ? <Sun className="h-6 w-6" /> : <Moon className="h-6 w-6" />}
-                </button>
-              </div>
+    <div className="min-h-screen bg-gradient-to-b from-blue-900 via-purple-900 to-indigo-900 text-white p-8">
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        {[...Array(50)].map((_, i) => (
+          <div
+            key={i}
+            className="absolute rounded-full bg-white"
+            style={{
+              width: Math.random() * 3 + 'px',
+              height: Math.random() * 3 + 'px',
+              top: Math.random() * 100 + '%',
+              left: Math.random() * 100 + '%',
+              animation: `twinkle ${Math.random() * 3 + 2}s infinite`
+            }}
+          />
+        ))}
+        <div className="absolute bottom-0 left-0 w-full h-64 bg-gradient-to-t from-indigo-900/50 to-transparent" />
+      </div>
+
+      <div className="max-w-4xl mx-auto relative">
+        <div className="text-center mb-12 relative">
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full">
+            <div className="relative w-full h-32">
+              <Moon className="absolute top-0 left-[20%] text-yellow-200 w-8 h-8 animate-bounce" />
+              <Stars className="absolute top-12 right-[25%] text-yellow-200 w-6 h-6 animate-pulse" />
+              <Sparkles className="absolute top-4 right-[15%] text-yellow-200 w-5 h-5 animate-bounce" />
             </div>
-          </nav>
-        </header>
-
-        <main className="transition-colors duration-200">
-          <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-            <div className="px-4 py-6 sm:px-0">
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5 }}
-                className="text-center"
-              >
-                <h1 className="text-4xl tracking-tight font-extrabold text-gray-900 dark:text-gray-100 sm:text-5xl md:text-6xl">
-                  <span className="block">Discover Our</span>
-                  <span className="block text-rose-500 dark:text-rose-400">Powerful Tools</span>
-                </h1>
-                <p className="mt-3 max-w-md mx-auto text-base text-gray-500 dark:text-gray-400 sm:text-lg md:mt-5 md:text-xl md:max-w-3xl">
-                  Explore our collection of web tools designed to make your development process smoother and more efficient.
-                </p>
-              </motion.div>
-
-              <div className="mt-10 max-w-xl mx-auto">
-                <div className="relative">
-                  <input
-                    type="text"
-                    placeholder="Search tools..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full px-6 py-3 rounded-full border-2 border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-rose-500 focus:border-transparent transition-all duration-200 shadow-sm hover:shadow-md"
-                  />
-                  <Search className="absolute right-4 top-3.5 h-5 w-5 text-gray-400 pointer-events-none" />
-                </div>
-              </div>
-
-              <div className="mt-10">
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {filteredTools.map((tool, index) => (
-                    <motion.div
-                      key={tool.id}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.5, delay: index * 0.1 }}
+          </div>
+          <h1 className="text-5xl font-bold bg-gradient-to-r from-pink-300 via-purple-300 to-indigo-300 text-transparent bg-clip-text mb-4">
+            Magical Bedtime Stories
+          </h1>
+          <p className="text-lg text-purple-200">Where dreams and imagination come to life!</p>
+        </div>
+        <div className="bg-gradient-to-br from-purple-800/90 to-indigo-800/90 backdrop-blur-lg border-2 border-purple-400/30 shadow-xl mb-8 rounded-xl overflow-hidden">
+          <div className="p-8">
+            <div className="space-y-8">
+              <div className="bg-indigo-800/50 rounded-xl p-6 border border-purple-400/30">
+                <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                  {/* <Bear className="w-6 h-6 text-yellow-300" /> */}
+                  Choose Your Age
+                </h3>
+                <div className="grid grid-cols-3 gap-4">
+                  {['3-4', '5-7', '8-10'].map((ageGroup) => (
+                    <button
+                      key={ageGroup}
+                      onClick={() => setAge(ageGroup)}
+                      className={`h-16 ${age === ageGroup 
+                        ? 'bg-gradient-to-r from-pink-500 to-purple-500 shadow-lg' 
+                        : 'bg-indigo-700/50 hover:bg-indigo-600/50'}`}
                     >
-                      <a href={tool.url} target='_blank' className="block h-full">
-                        <div className="bg-white dark:bg-gray-800 overflow-hidden shadow-lg rounded-lg hover:shadow-xl transition-all duration-300 group h-full flex flex-col">
-                          <div className="p-6 flex-grow">
-                            {tool?.madeByFriend && (
-                              <div className="absolute top-0 right-0 bg-yellow-100 text-yellow-800 pl-2 pr-1 text-center text-xs rounded-bl-lg">
-                                Made by a friend!
-                              </div>
-                            )}
-                            <div className="flex items-start">
-                              <div className="flex-shrink-0 text-5xl group-hover:scale-110 transition-transform duration-300">{tool.icon}</div>
-                              <div className="ml-4">
-                                <h3 className="text-xl leading-6 font-semibold text-gray-900 dark:text-gray-100 group-hover:text-rose-500 dark:group-hover:text-rose-400 transition-colors duration-300">{tool.name}</h3>
-                                <p className="mt-2 text-base text-gray-500 dark:text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300 transition-colors duration-300">{tool.description}</p>
-                              </div>
-                            </div>
-                          </div>
-                          <div className="bg-gray-50 dark:bg-gray-700 px-6 py-4 flex justify-between items-center">
-                            <div className="text-sm font-medium text-rose-500 dark:text-rose-400 group-hover:text-rose-600 dark:group-hover:text-rose-300 transition-colors duration-300">
-                              Use tool
-                            </div>
-                            <ExternalLink className="h-5 w-5 text-gray-400 group-hover:text-rose-500 dark:group-hover:text-rose-400 transition-colors duration-300" />
-                          </div>
-                        </div>
-                      </a>
-                    </motion.div>
+                      {ageGroup} years
+                    </button>
                   ))}
                 </div>
               </div>
-
-              <div ref={pricingRef} className="mt-20">
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5 }}
-                  className="text-center"
-                >
-                  <h2 className="text-3xl tracking-tight font-extrabold text-gray-900 dark:text-gray-100 sm:text-4xl md:text-5xl">
-                    <span className="block">Simple</span>
-                    <span className="block text-rose-500 dark:text-rose-400">Pricing Plans</span>
-                  </h2>
-                  <p className="mt-3 max-w-md mx-auto text-base text-gray-500 dark:text-gray-400 sm:text-lg md:mt-5 md:text-xl md:max-w-3xl">
-                    Choose the plan that works best for you and your projects.
-                  </p>
-                </motion.div>
-
-                <div className="mt-10">
-                  <div className="lg:max-w-4xl lg:mx-auto">
-                    <motion.div
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.5, delay: 0.1 }}
-                    >
-                      <div className="bg-white dark:bg-gray-800 overflow-hidden shadow-lg rounded-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
-                        <div className="px-6 py-8">
-                          <h3 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">Free</h3>
-                          <p className="mt-4 text-gray-500 dark:text-gray-400">Perfect for getting started</p>
-                          <p className="mt-8">
-                            <span className="text-4xl font-extrabold text-gray-900 dark:text-gray-100">$0</span>
-                            <span className="text-base font-medium text-gray-500 dark:text-gray-400">/month</span>
-                          </p>
-                          <ul className="mt-8 space-y-4">
-                            <li className="flex items-center">
-                              <Check className="h-5 w-5 text-green-500" />
-                              <span className="ml-3 text-gray-500 dark:text-gray-400">Access to all basic tools</span>
-                            </li>
-                            <li className="flex items-center">
-                              <Check className="h-5 w-5 text-green-500" />
-                              <span className="ml-3 text-gray-500 dark:text-gray-400">Unlimited usage</span>
-                            </li>
-                            <li className="flex items-center">
-                              <Check className="h-5 w-5 text-green-500" />
-                              <span className="ml-3 text-gray-500 dark:text-gray-400">
-                                Email support
-                              </span>
-                            </li>
-                          </ul>
-                        </div>
-                        <div className="px-6 py-4 bg-gray-50 dark:bg-gray-700">
-                          <a href="mailto:pallavkumarjha26@gmail.com" className="w-full px-4 py-2 text-base font-medium text-white bg-rose-500 rounded-md hover:bg-rose-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rose-500 transition-colors duration-200">Email Us</a>
-                        </div>
-                      </div>
-                    </motion.div>
-                    <Analytics />
-
-                    {/* <motion.div
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.5, delay: 0.2 }}
-                    >
-                      <div className="bg-white dark:bg-gray-800 overflow-hidden shadow-lg rounded-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
-                        <div className="px-6 py-8">
-                          <h3 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">Pay What You Want</h3>
-                          <p className="mt-4 text-gray-500 dark:text-gray-400">Support our project, get more features</p>
-                          <p className="mt-8">
-                            <span className="text-4xl font-extrabold text-gray-900 dark:text-gray-100">$X</span>
-                            <span className="text-base font-medium text-gray-500 dark:text-gray-400">/month</span>
-                          </p>
-                          <ul className="mt-8 space-y-4">
-                            <li className="flex items-center">
-                              <Check className="h-5 w-5 text-green-500" />
-                              <span className="ml-3 text-gray-500 dark:text-gray-400">Access to all premium tools</span>
-                            </li>
-                            <li className="flex items-center">
-                              <Check className="h-5 w-5 text-green-500" />
-                              <span className="ml-3 text-gray-500 dark:text-gray-400">Unlimited usage</span>
-                            </li>
-                            <li  className="flex items-center">
-                              <Check className="h-5 w-5 text-green-500" />
-                              <span className="ml-3 text-gray-500 dark:text-gray-400">Priority support</span>
-                            </li>
-                            <li className="flex items-center">
-                              <Check className="h-5 w-5 text-green-500" />
-                              <span className="ml-3 text-gray-500 dark:text-gray-400">Early access to new features</span>
-                            </li>
-                          </ul>
-                        </div>
-                        <div className="px-6 py-4 bg-gray-50 dark:bg-gray-700">
-                          <button className="w-full px-4 py-2 text-base font-medium text-white bg-rose-500 rounded-md hover:bg-rose-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rose-500 transition-colors duration-200">
-                            Choose Your Price
-                          </button>
-                        </div>
-                      </div>
-                    </motion.div> */}
-                  </div>
+              <div className="bg-indigo-800/50 rounded-xl p-6 border border-purple-400/30">
+                <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                  <Crown className="w-6 h-6 text-yellow-300" />
+                  Pick Your Adventure
+                </h3>
+                <div className="grid grid-cols-2 gap-4">
+                  {Object.entries(genreIcons).map(([genreKey, icon]) => (
+                   <button
+                   key={genreKey}
+                   onClick={() => setGenre(genreKey)}
+                   className={`h-20 flex flex-col items-center justify-center gap-2 rounded-md transition-all duration-300 ${
+                     genre === genreKey
+                       ? 'bg-gradient-to-r from-pink-500 to-purple-500 shadow-lg scale-105'
+                       : 'bg-indigo-700/50 hover:bg-indigo-600/50 hover:shadow-md'
+                   }`}
+                 >
+                   {icon}
+                   <span className="capitalize text-sm font-medium text-white">{genreKey}</span>
+                 </button>
+                 
+                  ))}
                 </div>
               </div>
+              <button
+                className={`w-full h-16 text-lg font-medium bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500 
+                  hover:from-pink-600 hover:via-purple-600 hover:to-indigo-600 shadow-xl rounded-md transition-all duration-300 
+                  ${isLoading ? 'opacity-70 cursor-not-allowed' : 'hover:shadow-2xl'}`}
+                onClick={generateStory}
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <div className="flex items-center justify-center gap-2">
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
+                    <span className="text-white">Creating Magic...</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center gap-2">
+                    <Sparkles className="w-6 h-6 text-white" />
+                    <span className="text-white">Create Your Story</span>
+                  </div>
+                )}
+              </button>
+
             </div>
           </div>
-        </main>
-        <footer className="bg-gray-900 text-white mt-12">
-        <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row justify-between items-center space-y-4 sm:space-y-0">
-          <p className="text-center text-sm">
-            &copy; 2024 Tools showcase. No rights reserved.
-          </p>
-          <button
-            onClick={() => window.open('https://buymeacoffee.com/pallavjha', '_blank')}
-            className="inline-flex items-center px-4 py-2 text-sm bg-transparent hover:bg-white hover:bg-opacity-10 rounded-md transition-all duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-300"
-          >
-            <CoffeeIcon style={{ marginRight: '12px' }} />
-            Buy Me a Coffee
-          </button>
         </div>
-      </footer>
+        {story && (
+          <div className="bg-gradient-to-br from-purple-800/90 to-indigo-800/90 backdrop-blur-lg border-2 border-purple-400/30 shadow-xl rounded-xl overflow-hidden">
+          <div className="p-8">
+            <div className="flex items-center justify-center gap-6 mb-8">
+              <button
+                onClick={togglePlayPause}
+                className="flex items-center gap-2 px-6 py-3 rounded-full bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 shadow-lg transition-all duration-300 transform hover:scale-105 text-white font-medium"
+              >
+                {isPlaying ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6" />}
+                {isPlaying ? 'Pause Story' : 'Play Story'}
+              </button>
+              <button
+                className="flex items-center gap-2 px-6 py-3 rounded-full bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 shadow-lg transition-all duration-300 transform hover:scale-105 text-white font-medium"
+              >
+                <Download className="w-6 h-6" />
+                Download Story
+              </button>
+            </div>
+            <div className="prose prose-invert max-w-none">
+              <p className="text-xl leading-relaxed text-white">{story}</p>
+            </div>
+          </div>
+        </div>
+        )}
       </div>
     </div>
-  )
-}
+  );
+};
+
+export default StoryGenerator;
