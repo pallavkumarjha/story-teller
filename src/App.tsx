@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react';
 import { Moon, Stars, Play, Pause, Download, Sparkles, Rocket, Crown } from 'lucide-react';
 import OpenAI from 'openai'
+import { Analytics } from "@vercel/analytics/react"
 
 const openai = new OpenAI({
   apiKey: import.meta.env.VITE_OPENAI_API_KEY,
@@ -190,6 +191,7 @@ const StoryGenerator = () => {
         </div>
         )}
       </div>
+      <Analytics />
     </div>
   );
 };
