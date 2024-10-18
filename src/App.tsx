@@ -218,12 +218,12 @@ const StoryGenerator = () => {
                   {isPlaying ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6" />}
                   {isPlaying ? 'Pause Story' : 'Play Story'}
                 </button>}
-                <button
+                {/* <button
                   className="flex items-center gap-2 px-6 py-3 rounded-full bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 shadow-lg transition-all duration-300 transform hover:scale-105 text-white font-medium"
                 >
                   <Download className="w-6 h-6" />
                   Download Story
-                </button>
+                </button> */}
               </div>
               <div className="prose prose-invert max-w-none">
                 <p className="text-xl leading-relaxed text-white">{story}</p>
