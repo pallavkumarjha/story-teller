@@ -203,6 +203,7 @@ const StoryGenerator = () => {
                   )}
                 </button>
 
+                <p className='text-center'>AI isn't perfect, so please use your discretion when reviewing the stories.</p>
               </div>
             </div>
           </div>
